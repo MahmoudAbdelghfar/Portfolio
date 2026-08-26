@@ -1,0 +1,1763 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Mahmoud — Frontend / Full-Stack Developer</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Archivo+Black&family=Space+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+/* ============ TOKENS ============ */
+:root{
+  --bg:#0e0e12;
+  --surface:#16161c;
+  --surface-2:#1e1e26;
+  --line:#2a2a33;
+  --text:#f2f2ec;
+  --muted:#8f8f88;
+  --accent:#5b8cff;
+  --accent-dim:#3a5bbf;
+  --radius:2px;
+  --wrap: min(92vw, 1240px);
+}
+
+*{margin:0;padding:0;box-sizing:border-box;}
+html{scroll-behavior:smooth;background:var(--bg);}
+body{
+  background:transparent;
+  color:var(--text);
+  font-family:'Space Grotesk', sans-serif;
+  overflow-x:hidden;
+  cursor:default;
+}
+::selection{background:var(--accent);color:var(--bg);}
+
+/* ============ SCROLL-REACTIVE BACKGROUND ============ */
+.bg-fx{position:fixed;inset:0;z-index:-1;overflow:hidden;pointer-events:none;}
+.bg-grid{
+  position:absolute;inset:0;
+  background-image:
+    linear-gradient(to right, var(--line) 1px, transparent 1px),
+    linear-gradient(to bottom, var(--line) 1px, transparent 1px);
+  background-size:64px 64px;
+  opacity:0.45;
+  will-change:background-position;
+  -webkit-mask-image:radial-gradient(ellipse at 50% 25%, #000 20%, transparent 82%);
+          mask-image:radial-gradient(ellipse at 50% 25%, #000 20%, transparent 82%);
+}
+.bg-glow{
+  position:absolute;width:60vw;height:60vw;max-width:820px;max-height:820px;
+  border-radius:50%;filter:blur(90px);will-change:transform;
+}
+.bg-glow-1{top:-12%;left:-8%;background:radial-gradient(circle, rgba(91,140,255,0.22), transparent 70%);}
+.bg-glow-2{bottom:-15%;right:-12%;background:radial-gradient(circle, rgba(91,140,255,0.15), transparent 70%);}
+
+/* starfield layer — sits on top of the grid/glows, still behind all content */
+.star-canvas{
+  position:absolute;inset:0;display:block;pointer-events:none;
+}
+
+.display{
+  font-family:'Archivo Black', sans-serif;
+  text-transform:uppercase;
+  letter-spacing:-0.01em;
+  line-height:0.92;
+}
+.mono{
+  font-family:'JetBrains Mono', monospace;
+}
+
+a{color:inherit;text-decoration:none;}
+.wrap{width:var(--wrap);margin-inline:auto;}
+
+/* ============ PRELOADER ============ */
+html.loading, html.loading body{overflow:hidden;height:100%;}
+
+#preloader{
+  position:fixed;inset:0;z-index:500;
+  background:var(--bg);
+  display:flex;flex-direction:column;align-items:center;justify-content:center;
+  transition:transform .9s cubic-bezier(.76,0,.24,1), opacity .5s ease .5s;
+}
+#preloader.done{transform:translateY(-100%);}
+.preloader-label{
+  font-family:'JetBrains Mono',monospace;font-size:12px;color:var(--muted);
+  text-transform:uppercase;letter-spacing:.18em;margin-bottom:22px;
+  display:flex;align-items:center;gap:9px;
+}
+.preloader-label .dot{width:6px;height:6px;border-radius:50%;background:var(--accent);animation:pulse 1.8s ease-in-out infinite;}
+.preloader-count{
+  font-family:'Archivo Black',sans-serif;font-size:clamp(56px,13vw,150px);
+  color:var(--text);line-height:1;display:flex;align-items:flex-start;
+  font-variant-numeric:tabular-nums;
+}
+.preloader-count .pct{
+  font-family:'JetBrains Mono',monospace;font-size:clamp(18px,2.6vw,28px);
+  color:var(--accent);margin-left:6px;margin-top:8px;
+}
+.preloader-bar-wrap{
+  width:min(60vw,420px);height:2px;background:var(--line);margin-top:36px;overflow:hidden;
+}
+.preloader-bar{width:0%;height:100%;background:var(--accent);}
+.preloader-tag{
+  margin-top:22px;font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--muted);
+  letter-spacing:.1em;text-transform:uppercase;
+}
+
+/* ============ SITE ENTRANCE (post-preloader) ============ */
+.intro-el{
+  opacity:0;transform:translateY(28px);
+  transition:opacity .9s cubic-bezier(.16,1,.3,1), transform .9s cubic-bezier(.16,1,.3,1);
+}
+body.loaded .intro-el{opacity:1;transform:translateY(0);}
+
+@media (prefers-reduced-motion: reduce){
+  .intro-el{opacity:1;transform:none;transition:none;}
+  #preloader{transition:opacity .3s ease;}
+  #preloader.done{transform:none;opacity:0;}
+}
+
+/* film grain / noise overlay */
+.grain{
+  position:fixed;inset:0;pointer-events:none;z-index:200;
+  opacity:0.035;
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  mix-blend-mode:overlay;
+}
+
+/* custom cursor dot (desktop only) */
+.cursor-dot{
+  position:fixed;top:0;left:0;width:8px;height:8px;border-radius:50%;
+  background:var(--accent);pointer-events:none;z-index:300;
+  transform:translate(-50%,-50%);
+  transition:transform .15s ease-out, opacity .2s;
+  mix-blend-mode:difference;
+}
+@media (hover:none){.cursor-dot{display:none;}}
+
+/* ============ NAV ============ */
+header{
+  position:fixed;top:0;left:0;right:0;z-index:100;
+  padding:22px 0;
+  background:linear-gradient(to bottom, rgba(14,14,18,0.92), transparent);
+}
+nav{display:flex;align-items:center;justify-content:space-between;}
+.logo{
+  font-family:'Archivo Black',sans-serif;
+  font-size:20px;text-transform:uppercase;letter-spacing:-0.02em;
+}
+.logo span{color:var(--accent);}
+.nav-links{
+  display:flex;gap:36px;list-style:none;
+  font-family:'JetBrains Mono',monospace;
+  font-size:13px;text-transform:uppercase;letter-spacing:0.03em;
+}
+.nav-links a{
+  position:relative;color:var(--muted);transition:color .25s;
+}
+.nav-links a:hover{color:var(--text);}
+.nav-links a::after{
+  content:'';position:absolute;left:0;bottom:-4px;width:0;height:1px;
+  background:var(--accent);transition:width .25s;
+}
+.nav-links a:hover::after{width:100%;}
+.nav-cta{
+  font-family:'JetBrains Mono',monospace;font-size:12px;text-transform:uppercase;
+  border:1px solid var(--line);padding:10px 18px;letter-spacing:0.04em;
+  transition:all .25s;
+}
+.nav-cta:hover{border-color:var(--accent);color:var(--accent);}
+.nav-toggle{display:none;}
+
+@media (max-width:820px){
+  .nav-links{display:none;}
+  .nav-cta{padding:8px 14px;font-size:11px;}
+}
+
+/* ============ HERO ============ */
+.hero{
+  min-height:100svh;display:flex;flex-direction:column;justify-content:center;
+  position:relative;padding-top:90px;padding-bottom:60px;
+  border-bottom:1px solid var(--line);
+}
+.hero-eyebrow{
+  font-family:'JetBrains Mono',monospace;font-size:13px;color:var(--accent);
+  text-transform:uppercase;letter-spacing:0.12em;margin-bottom:24px;
+  display:flex;align-items:center;gap:10px;
+}
+.hero-eyebrow::before{
+  content:'';width:8px;height:8px;background:var(--accent);border-radius:50%;
+  animation:pulse 1.8s ease-in-out infinite;
+}
+@keyframes pulse{0%,100%{opacity:1;}50%{opacity:.3;}}
+
+.hero h1{
+  font-size:clamp(48px, 9vw, 122px);
+  margin-bottom:28px;
+}
+.hero h1 .accent-line{color:var(--text);-webkit-text-stroke:0;}
+.hero h1 .stroke-line{
+  color:transparent;-webkit-text-stroke:1.5px var(--muted);
+}
+
+.hero-sub{
+  max-width:520px;color:var(--muted);font-size:17px;line-height:1.6;
+  margin-bottom:40px;
+}
+.hero-actions{display:flex;gap:16px;align-items:center;flex-wrap:wrap;}
+.btn-primary{
+  background:var(--accent);color:var(--bg);font-family:'JetBrains Mono',monospace;
+  font-size:13px;text-transform:uppercase;letter-spacing:0.04em;
+  padding:16px 30px;font-weight:600;transition:transform .2s;
+  display:inline-flex;align-items:center;gap:10px;
+}
+.btn-primary:hover{transform:translateY(-2px);}
+.btn-ghost{
+  font-family:'JetBrains Mono',monospace;font-size:13px;color:var(--muted);
+  text-transform:uppercase;letter-spacing:0.04em;padding:16px 6px;
+  border-bottom:1px solid var(--line);transition:color .2s,border-color .2s;
+}
+.btn-ghost:hover{color:var(--text);border-color:var(--accent);}
+
+/* terminal detail (used in About) — stays dark as an intentional code-card accent */
+.terminal{
+  width:100%;max-width:360px;background:#14141a;border:1px solid var(--line);
+  box-shadow:0 30px 80px rgba(0,0,0,0.5);
+  font-family:'JetBrains Mono',monospace;font-size:12.5px;
+}
+.terminal-bar{
+  display:flex;align-items:center;gap:6px;padding:10px 14px;
+  border-bottom:1px solid var(--line);background:#1c1c24;
+}
+.terminal-dot{width:9px;height:9px;border-radius:50%;background:#44444d;}
+.terminal-body{padding:18px;color:#c8c8c2;line-height:1.7;}
+.terminal-body .k{color:#8c8c86;}
+.terminal-body .s{color:#f4f4ef;}
+.terminal-body .c{color:#8c8c86;}
+.terminal-cursor{
+  display:inline-block;width:7px;height:14px;background:#f4f4ef;
+  animation:blink 1s step-end infinite;vertical-align:middle;margin-left:2px;
+}
+@keyframes blink{50%{opacity:0;}}
+
+/* hero photo stage */
+.hero-stage{
+  position:relative;width:100%;
+  margin-top:8px;padding-block:16px;
+  display:flex;align-items:center;justify-content:center;
+}
+.stage-word{
+  position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);
+  font-size:clamp(64px,15vw,230px);white-space:nowrap;
+  color:transparent;-webkit-text-stroke:1.5px rgba(242,242,236,0.12);
+  user-select:none;z-index:1;letter-spacing:-0.02em;pointer-events:none;
+}
+/* centered container that the oval + badges anchor to */
+.stage-frame{
+  position:relative;z-index:2;
+  width:clamp(300px, 34vw, 400px);
+}
+/* circular portrait — black bg blends with the photo's own black backdrop */
+.stage-photo-wrap{
+  position:relative;width:100%;aspect-ratio:1 / 1;
+  background:#0a0a0a;border-radius:50%;overflow:hidden;
+  border:1px solid var(--line);
+  box-shadow:0 24px 70px rgba(0,0,0,.5), 0 0 0 1px rgba(242,242,236,.05);
+}
+.stage-photo{
+  width:100%;height:100%;
+  object-fit:cover;object-position:center top;
+  filter:contrast(1.05) saturate(0.98);
+}
+.stage-badge{
+  position:absolute;background:var(--surface);border:1px solid var(--line);
+  padding:12px 16px;font-family:'JetBrains Mono',monospace;font-size:12px;
+  display:flex;align-items:center;gap:9px;white-space:nowrap;
+  box-shadow:0 16px 40px rgba(0,0,0,.14);z-index:3;
+}
+.stage-badge .dot{width:7px;height:7px;border-radius:50%;background:var(--accent);animation:pulse 1.8s ease-in-out infinite;}
+.badge-top{top:8%;right:-14%;}
+.badge-bottom{bottom:10%;left:-16%;}
+.badge-bottom .k{color:var(--muted);display:block;font-size:10.5px;margin-bottom:2px;text-transform:uppercase;letter-spacing:.06em;}
+
+@media (max-width:1080px){
+  .hero{padding-bottom:40px;}
+}
+@media (max-width:640px){
+  .stage-frame{width:min(78vw, 300px);}
+  .stage-word{font-size:72px;}
+  .badge-top{top:5%;right:0;padding:9px 12px;font-size:10.5px;}
+  .badge-bottom{bottom:7%;left:0;padding:10px 13px;}
+}
+
+.scroll-cue{
+  position:absolute;bottom:36px;left:0;
+  display:flex;align-items:center;gap:10px;
+  font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--muted);
+  text-transform:uppercase;letter-spacing:0.1em;
+}
+.scroll-cue .line{width:36px;height:1px;background:var(--muted);position:relative;overflow:hidden;}
+.scroll-cue .line::after{
+  content:'';position:absolute;left:-100%;top:0;width:100%;height:100%;background:var(--accent);
+  animation:scrollline 2s ease-in-out infinite;
+}
+@keyframes scrollline{50%{left:100%;}100%{left:100%;}}
+
+/* ============ MARQUEE ============ */
+.marquee-wrap{
+  border-bottom:1px solid var(--line);padding:20px 0;overflow:hidden;
+  background:var(--surface);
+}
+.marquee{
+  display:flex;white-space:nowrap;width:max-content;
+  animation:marquee 22s linear infinite;
+}
+.marquee span{
+  font-family:'JetBrains Mono',monospace;font-size:14px;color:var(--muted);
+  text-transform:uppercase;letter-spacing:0.06em;padding-right:40px;
+}
+.marquee span em{color:var(--accent);font-style:normal;padding-right:40px;}
+@keyframes marquee{from{transform:translateX(0);}to{transform:translateX(-50%);}}
+
+/* ============ SECTION HEADERS (oversized cropped) ============ */
+.section{padding:120px 0;border-bottom:1px solid var(--line);position:relative;}
+.section-head{position:relative;margin-bottom:70px;}
+.crop-title{
+  font-size:clamp(64px, 13vw, 168px);
+  line-height:0.85;white-space:nowrap;
+  color:transparent;-webkit-text-stroke:1px rgba(242,242,236,0.14);
+  user-select:none;
+}
+.section-label{
+  position:absolute;left:2px;bottom:14px;
+  font-family:'JetBrains Mono',monospace;font-size:14px;
+  text-transform:uppercase;letter-spacing:0.05em;
+  display:flex;align-items:center;gap:12px;
+}
+.section-label .idx{color:var(--accent);}
+
+/* ============ STACK / SERVICES ============ */
+.stack-grid{
+  display:grid;grid-template-columns:repeat(3,1fr);gap:1px;
+  background:var(--line);border:1px solid var(--line);
+}
+.stack-card{
+  /* translucent so the starfield reads through the only large opaque block on the page */
+  background:rgba(14,14,18,0.72);padding:40px 32px;transition:background .3s;
+}
+.stack-card:hover{background:rgba(30,30,38,0.86);}
+.stack-num{font-family:'JetBrains Mono',monospace;color:var(--accent);font-size:13px;margin-bottom:24px;}
+.stack-card h3{font-size:24px;margin-bottom:14px;text-transform:uppercase;letter-spacing:-0.01em;}
+.stack-card p{color:var(--muted);font-size:14.5px;line-height:1.65;margin-bottom:18px;}
+.tag-row{display:flex;flex-wrap:wrap;gap:8px;}
+.tag{
+  font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--text);
+  border:1px solid var(--line);padding:5px 10px;text-transform:uppercase;
+}
+@media (max-width:820px){.stack-grid{grid-template-columns:1fr;}}
+
+/* ============ WORK ============ */
+.work-list{display:flex;flex-direction:column;}
+.work-item{
+  display:grid;grid-template-columns:80px 1fr 220px 140px;align-items:center;
+  gap:24px;padding:34px 0;border-top:1px solid var(--line);
+  transition:padding-left .3s;
+}
+.work-list .work-item:last-child{border-bottom:1px solid var(--line);}
+.work-item:hover{padding-left:14px;background:var(--surface);}
+.work-num{font-family:'JetBrains Mono',monospace;color:var(--muted);font-size:13px;}
+.work-name{font-size:clamp(22px,3vw,34px);text-transform:uppercase;letter-spacing:-0.01em;font-family:'Archivo Black',sans-serif;}
+.work-tags{font-family:'JetBrains Mono',monospace;font-size:12px;color:var(--muted);text-transform:uppercase;}
+.work-arrow{
+  justify-self:end;font-size:24px;color:var(--muted);transition:transform .3s,color .3s;
+}
+.work-item:hover .work-arrow{transform:translateX(6px) rotate(-45deg);color:var(--accent);}
+@media (max-width:700px){
+  .work-item{grid-template-columns:40px 1fr;row-gap:8px;}
+  .work-tags,.work-arrow{grid-column:2;}
+}
+
+/* ============ ABOUT / TESTIMONIAL SPLIT ============ */
+.about-grid{display:grid;grid-template-columns:1fr 1fr;gap:80px;align-items:start;}
+.about-quote{
+  font-size:clamp(24px,3vw,36px);line-height:1.35;font-weight:500;
+}
+.about-quote .accent-word{color:var(--accent);}
+.about-meta{margin-top:40px;font-family:'JetBrains Mono',monospace;font-size:13px;color:var(--muted);}
+.about-facts{display:flex;flex-direction:column;gap:0;}
+.fact-row{
+  display:flex;justify-content:space-between;padding:20px 0;border-top:1px solid var(--line);
+  font-family:'JetBrains Mono',monospace;font-size:14px;
+}
+.about-facts .fact-row:last-child{border-bottom:1px solid var(--line);}
+.fact-row .k{color:var(--muted);text-transform:uppercase;letter-spacing:0.05em;}
+@media (max-width:820px){.about-grid{grid-template-columns:1fr;gap:48px;}}
+
+/* ============ FOOTER / CONTACT ============ */
+footer{padding:100px 0 40px;position:relative;overflow:hidden;}
+.footer-eyebrow{
+  font-family:'JetBrains Mono',monospace;color:var(--accent);font-size:13px;
+  text-transform:uppercase;letter-spacing:0.1em;margin-bottom:20px;
+}
+.footer-big{
+  font-size:clamp(56px,12vw,160px);line-height:0.86;
+  display:flex;align-items:baseline;gap:24px;flex-wrap:wrap;
+}
+.footer-big .dot{color:var(--accent);}
+.footer-email{
+  margin-top:30px;font-family:'JetBrains Mono',monospace;
+  font-size:clamp(16px,2.4vw,22px);color:var(--muted);
+  display:inline-block;border-bottom:1px solid var(--line);padding-bottom:8px;
+  transition:color .25s,border-color .25s;
+}
+.footer-email:hover{color:var(--accent);border-color:var(--accent);}
+
+.footer-bottom{
+  margin-top:90px;padding-top:28px;border-top:1px solid var(--line);
+  display:flex;justify-content:space-between;flex-wrap:wrap;gap:16px;
+  font-family:'JetBrains Mono',monospace;font-size:12px;color:var(--muted);
+  text-transform:uppercase;letter-spacing:0.05em;
+}
+.footer-socials{display:flex;gap:22px;}
+.footer-socials a{color:var(--muted);transition:color .25s;}
+.footer-socials a:hover{color:var(--accent);}
+
+/* reveal-on-scroll */
+.reveal{opacity:0;transform:translateY(26px);transition:opacity .7s ease, transform .7s ease;}
+.reveal.in{opacity:1;transform:translateY(0);}
+
+@media (max-width:600px){
+  .section{padding:80px 0;}
+  .terminal{width:100%;}
+}
+/* ============ HERO TITLE REVEAL ============ */
+/* No overflow:hidden here — line-height is 0.92, so clipping the h1 would eat
+   the descenders in "Building" and "ship.". The opacity+blur in heroWordIn is
+   what hides the words on the way up instead. */
+.hero-title{
+  perspective:900px;
+}
+
+.hero-word{
+  display:inline-block;
+  opacity:0;
+  transform:translateY(100%) rotateX(-35deg);
+  filter:blur(8px);
+  transform-origin:bottom;
+}
+
+body.loaded .hero-word{
+  animation:heroWordIn .9s cubic-bezier(.16,1,.3,1) forwards;
+}
+
+/* nth-of-type, not nth-child — the <br> in the title is a child too and would
+   shift every delay by one, leaving the last word with no delay at all */
+body.loaded .hero-word:nth-of-type(1){
+  animation-delay:.10s;
+}
+
+body.loaded .hero-word:nth-of-type(2){
+  animation-delay:.22s;
+}
+
+body.loaded .hero-word:nth-of-type(3){
+  animation-delay:.34s;
+}
+
+body.loaded .hero-word:nth-of-type(4){
+  animation-delay:.46s;
+}
+
+body.loaded .hero-word:nth-of-type(5){
+  animation-delay:.58s;
+}
+
+.stroke-word{
+  color:transparent;
+  -webkit-text-stroke:1.5px var(--muted);
+}
+
+.solid-word{
+  color:var(--text);
+}
+
+@keyframes heroWordIn{
+  0%{
+    opacity:0;
+    transform:translateY(100%) rotateX(-35deg);
+    filter:blur(8px);
+  }
+
+  60%{
+    opacity:1;
+    filter:blur(0);
+  }
+
+  100%{
+    opacity:1;
+    transform:translateY(0) rotateX(0);
+    filter:blur(0);
+  }
+}
+
+@media (prefers-reduced-motion: reduce){
+  .hero-word{
+    opacity:1;
+    transform:none;
+    filter:none;
+    animation:none !important;
+  }
+}
+/* ============ SCROLL-DRIVEN STACK ============ */
+
+.stack-section{
+  position:relative;
+  height:320vh;
+  border-bottom:1px solid var(--line);
+}
+
+.stack-sticky{
+  position:sticky;
+  top:0;
+  height:100svh;
+  min-height:650px;
+  display:flex;
+  flex-direction:column;
+  justify-content:center;
+  overflow:hidden;
+}
+
+.stack-sticky .section-head{
+  position:absolute;
+  top:120px;
+  left:0;
+  right:0;
+  margin-bottom:0;
+}
+
+.stack-stage{
+  position:relative;
+  width:100%;
+  max-width:900px;
+  min-height:280px;
+  margin:0 auto;
+}
+
+.stack-card{
+  position:absolute;
+  inset:0;
+
+  background:rgba(14,14,18,.72);
+  border:1px solid var(--line);
+  padding:40px 32px;
+
+  opacity:0;
+  transform:translateY(60px) scale(.96);
+  filter:blur(8px);
+
+  transition:
+    opacity .65s cubic-bezier(.16,1,.3,1),
+    transform .65s cubic-bezier(.16,1,.3,1),
+    filter .65s cubic-bezier(.16,1,.3,1);
+
+  pointer-events:none;
+}
+
+.stack-card.active{
+  opacity:1;
+  transform:translateY(0) scale(1);
+  filter:blur(0);
+  pointer-events:auto;
+}
+
+.stack-card.prev{
+  opacity:0;
+  transform:translateY(-60px) scale(.96);
+  filter:blur(8px);
+}
+
+.stack-card .stack-num{
+  font-family:'JetBrains Mono',monospace;
+  color:var(--accent);
+  font-size:13px;
+  margin-bottom:24px;
+}
+
+.stack-card h3{
+  font-size:clamp(28px,4vw,48px);
+  margin-bottom:14px;
+  text-transform:uppercase;
+  letter-spacing:-.01em;
+}
+
+.stack-card p{
+  max-width:620px;
+  color:var(--muted);
+  font-size:16px;
+  line-height:1.7;
+  margin-bottom:24px;
+}
+
+.stack-progress{
+  position:absolute;
+  right:0;
+  bottom:70px;
+
+  display:flex;
+  gap:8px;
+
+  font-size:12px;
+  color:var(--muted);
+  letter-spacing:.08em;
+}
+
+.stack-progress-current{
+  color:var(--accent);
+}
+
+.stack-hint{
+  position:absolute;
+  left:0;
+  bottom:70px;
+
+  display:flex;
+  align-items:center;
+  gap:10px;
+
+  color:var(--muted);
+  font-size:11px;
+  letter-spacing:.1em;
+}
+
+.stack-hint-line{
+  width:36px;
+  height:1px;
+  background:var(--muted);
+  position:relative;
+  overflow:hidden;
+}
+
+.stack-hint-line::after{
+  content:'';
+  position:absolute;
+  left:-100%;
+  top:0;
+  width:100%;
+  height:100%;
+  background:var(--accent);
+  animation:stackScrollHint 1.8s ease-in-out infinite;
+}
+
+@keyframes stackScrollHint{
+  50%{left:100%;}
+  100%{left:100%;}
+}
+
+@media(max-width:820px){
+
+  .stack-section{
+    height:300vh;
+  }
+
+  .stack-sticky{
+    min-height:600px;
+  }
+
+  .stack-sticky .section-head{
+    top:80px;
+  }
+
+  .stack-stage{
+    min-height:330px;
+  }
+
+  .stack-card{
+    padding:30px 24px;
+  }
+
+  .stack-hint{
+    bottom:35px;
+  }
+
+  .stack-progress{
+    bottom:35px;
+  }
+}
+
+@media(prefers-reduced-motion:reduce){
+
+  .stack-card{
+    transition:none;
+    filter:none;
+  }
+
+  .stack-hint-line::after{
+    animation:none;
+  }
+}
+</style>
+</head>
+<body>
+
+<div class="bg-fx" aria-hidden="true">
+  <div class="bg-grid"></div>
+  <div class="bg-glow bg-glow-1"></div>
+  <div class="bg-glow bg-glow-2"></div>
+  <canvas class="star-canvas" id="starCanvas"></canvas>
+</div>
+
+<div id="preloader">
+  <div class="preloader-label"><span class="dot"></span> Loading portfolio</div>
+  <div class="preloader-count"><span id="preloaderCount">0</span><span class="pct">%</span></div>
+  <div class="preloader-bar-wrap"><div class="preloader-bar" id="preloaderBar"></div></div>
+  <div class="preloader-tag">Mahmoud — Frontend / Full-Stack</div>
+</div>
+
+<div class="grain"></div>
+<div class="cursor-dot" id="cursorDot"></div>
+
+<header class="intro-el" style="transition-delay:.05s;">
+  <nav class="wrap">
+    <a href="#" class="logo">MAH<span>.</span>DEV</a>
+    <ul class="nav-links">
+      <li><a href="#work">Work</a></li>
+      <li><a href="#stack">Stack</a></li>
+      <li><a href="#about">About</a></li>
+      <li><a href="#contact">Contact</a></li>
+    </ul>
+    <a href="Files\CV.pdf" class="nav-cta" download>Download CV</a>
+  </nav>
+</header>
+
+<section class="hero wrap">
+  <div class="hero-eyebrow intro-el" style="transition-delay:.15s;">Available for freelance &amp; junior roles</div>
+<h1 class="display hero-title">
+  <span class="hero-word solid-word">Building</span>
+  <span class="hero-word solid-word">interfaces</span><br>
+  <span class="hero-word solid-word">that</span>
+  <span class="hero-word stroke-word">actually</span>
+  <span class="hero-word solid-word">ship.</span>
+</h1>
+
+  <p class="hero-sub intro-el" style="transition-delay:.4s;">
+    I'm Mahmoud — a frontend &amp; full-stack developer from Egypt. I turn product ideas into
+    fast, accessible interfaces, backed by real APIs and databases, not just static mockups.
+  </p>
+  <div class="hero-actions intro-el" style="transition-delay:.5s;">
+    <a href="#work" class="btn-primary">See the work →</a>
+    <a href="#contact" class="btn-ghost">Let's talk</a>
+  </div>
+
+  <div class="hero-stage intro-el" style="transition-delay:.6s;">
+    <div class="stage-word display">DEVELOPER</div>
+    <div class="stage-frame">
+      <div class="stage-photo-wrap">
+        <img class="stage-photo" src="Images/mahmoud.jpeg" alt="Mahmoud — Frontend &amp; Full-Stack Developer">
+      </div>
+      <div class="stage-badge badge-top"><span class="dot"></span> Open to work</div>
+      <div class="stage-badge badge-bottom"><span class="k">Currently</span> Trainee @ Next Academy</div>
+    </div>
+  </div>
+
+  <div class="scroll-cue intro-el" style="transition-delay:.7s;"><span class="line"></span> Scroll</div>
+</section>
+
+<div class="marquee-wrap">
+  <div class="marquee">
+    <span>Frontend Development <em>◆</em>Full-Stack Engineering <em>◆</em>ASP.NET Core <em>◆</em>UI Systems <em>◆</em>Frontend Development <em>◆</em>Full-Stack Engineering <em>◆</em>ASP.NET Core <em>◆</em>UI Systems <em>◆</em></span>
+  </div>
+</div>
+
+<!-- ============ STACK ============ -->
+<section class="stack-section" id="stack">
+  <div class="stack-sticky wrap">
+
+    <div class="section-head">
+      <div class="crop-title display">STACK</div>
+      <div class="section-label">
+        <span class="idx">01</span> What I work with
+      </div>
+    </div>
+
+    <div class="stack-stage">
+
+      <div class="stack-card" data-stack-card="0">
+        <div class="stack-num">/ 01</div>
+        <h3>Frontend</h3>
+        <p>
+          Interfaces built with clean markup, deliberate CSS,
+          and JS that doesn't fight the browser.
+        </p>
+        <div class="tag-row">
+          <span class="tag">HTML</span>
+          <span class="tag">CSS</span>
+          <span class="tag">JavaScript</span>
+        </div>
+      </div>
+
+      <div class="stack-card" data-stack-card="1">
+        <div class="stack-num">/ 02</div>
+        <h3>Backend</h3>
+        <p>
+          APIs and data models that hold up under real usage,
+          not just the happy path.
+        </p>
+        <div class="tag-row">
+          <span class="tag">ASP.NET Core MVC</span>
+          <span class="tag">EF Core</span>
+          <span class="tag">SQL Server</span>
+        </div>
+      </div>
+
+      <div class="stack-card" data-stack-card="2">
+        <div class="stack-num">/ 03</div>
+        <h3>Auth &amp; Access</h3>
+        <p>
+          User accounts, roles, and permissions done properly
+          from day one.
+        </p>
+        <div class="tag-row">
+          <span class="tag">ASP.NET Identity</span>
+          <span class="tag">Sessions</span>
+          <span class="tag">Roles</span>
+        </div>
+      </div>
+
+    </div>
+
+    <div class="stack-progress mono">
+      <span class="stack-progress-current">01</span>
+      <span>/</span>
+      <span>03</span>
+    </div>
+
+    <div class="stack-hint mono">
+      <span class="stack-hint-line"></span>
+      SCROLL TO EXPLORE
+    </div>
+
+  </div>
+</section>
+
+<section class="section wrap" id="work">
+  <div class="section-head reveal">
+    <div class="crop-title display">WORK</div>
+    <div class="section-label"><span class="idx">02</span> Selected projects</div>
+  </div>
+  <div class="work-list reveal">
+    <a href="#" class="work-item">
+      <span class="work-num">01</span>
+      <span class="work-name">AqarX</span>
+      <span class="work-tags">Real Estate · Full-Stack</span>
+      <span class="work-arrow">↗</span>
+    </a>
+    <a href="#" class="work-item">
+      <span class="work-num">02</span>
+      <span class="work-name">Project Two</span>
+      <span class="work-tags">Placeholder · Add details</span>
+      <span class="work-arrow">↗</span>
+    </a>
+    <a href="#" class="work-item">
+      <span class="work-num">03</span>
+      <span class="work-name">Project Three</span>
+      <span class="work-tags">Placeholder · Add details</span>
+      <span class="work-arrow">↗</span>
+    </a>
+  </div>
+</section>
+
+<section class="section wrap" id="about">
+  <div class="section-head reveal">
+    <div class="crop-title display">ABOUT</div>
+    <div class="section-label"><span class="idx">03</span> A bit more context</div>
+  </div>
+  <div class="about-grid">
+    <div class="reveal">
+      <p class="about-quote">
+        I like software that <span class="accent-word">respects</span> the person using it —
+        fast, clear, and built on a backend that doesn't fall over.
+      </p>
+      <div class="about-meta">— Mahmoud, currently training at Next Academy</div>
+
+      <div class="terminal" style="margin-top:40px;">
+        <div class="terminal-bar">
+          <div class="terminal-dot"></div><div class="terminal-dot"></div><div class="terminal-dot"></div>
+          <span class="c" style="margin-left:8px;">developer.js</span>
+        </div>
+        <div class="terminal-body">
+          <div><span class="k">const</span> dev = {</div>
+          <div>&nbsp;&nbsp;name: <span class="s">"Mahmoud"</span>,</div>
+          <div>&nbsp;&nbsp;role: <span class="s">"Frontend / Full-Stack"</span>,</div>
+          <div>&nbsp;&nbsp;stack: [<span class="s">"JS"</span>, <span class="s">"ASP.NET Core"</span>, <span class="s">"SQL Server"</span>],</div>
+          <div>&nbsp;&nbsp;shipping: <span class="k">true</span></div>
+          <div>};<span class="terminal-cursor"></span></div>
+        </div>
+      </div>
+    </div>
+    <div class="about-facts reveal">
+      <div class="fact-row"><span class="k">Location</span><span>Egypt</span></div>
+      <div class="fact-row"><span class="k">Focus</span><span>Frontend / Full-Stack</span></div>
+      <div class="fact-row"><span class="k">Currently</span><span>Software Dev Trainee, Next Academy</span></div>
+      <div class="fact-row"><span class="k">Status</span><span>Open to work</span></div>
+    </div>
+  </div>
+</section>
+
+<footer id="contact" class="wrap">
+  <div class="reveal">
+    <div class="footer-eyebrow">Have a project in mind?</div>
+    <div class="footer-big display">Let's talk<span class="dot">.</span></div>
+    <a href="mailto:hello@example.com" class="footer-email">hello@example.com</a>
+  </div>
+  <div class="footer-bottom">
+    <span>© 2026 Mahmoud — All rights reserved</span>
+    <div class="footer-socials">
+      <a href="#">GitHub</a>
+      <a href="#">LinkedIn</a>
+      <a href="#">Instagram</a>
+    </div>
+  </div>
+</footer>
+
+<script>
+// preloader
+document.documentElement.classList.add('loading');
+(function(){
+  const preloader = document.getElementById('preloader');
+  const countEl = document.getElementById('preloaderCount');
+  const barEl = document.getElementById('preloaderBar');
+  let progress = 0;
+
+  function tick(){
+    progress += Math.random() * 16 + 6;
+    if (progress > 100) progress = 100;
+    countEl.textContent = Math.floor(progress);
+    barEl.style.width = progress + '%';
+    if (progress < 100) {
+      setTimeout(tick, 90 + Math.random() * 130);
+    } else {
+      setTimeout(finish, 380);
+    }
+  }
+
+  function finish(){
+    preloader.classList.add('done');
+    document.documentElement.classList.remove('loading');
+    document.body.classList.add('loaded');
+    document.dispatchEvent(new Event('site:ready'));
+    setTimeout(() => { preloader.style.display = 'none'; }, 950);
+  }
+
+  function start(){ setTimeout(tick, 300); }
+
+  if (document.readyState === 'complete') {
+    start();
+  } else {
+    window.addEventListener('load', start);
+  }
+})();
+
+// custom cursor
+const dot = document.getElementById('cursorDot');
+if (window.matchMedia('(hover: hover)').matches) {
+  window.addEventListener('mousemove', e => {
+    dot.style.left = e.clientX + 'px';
+    dot.style.top = e.clientY + 'px';
+  });
+}
+
+// scroll reveal
+const revealEls = document.querySelectorAll('.reveal');
+const io = new IntersectionObserver((entries) => {
+  entries.forEach(entry => {
+    if (entry.isIntersecting) {
+      entry.target.classList.add('in');
+      io.unobserve(entry.target);
+    }
+  });
+}, { threshold: 0.15 });
+revealEls.forEach(el => io.observe(el));
+
+// smooth nav active state (simple)
+document.querySelectorAll('a[href^="#"]').forEach(link => {
+  link.addEventListener('click', e => {
+    const target = document.querySelector(link.getAttribute('href'));
+    if (target) {
+      e.preventDefault();
+      target.scrollIntoView({ behavior: 'smooth' });
+    }
+  });
+});
+
+// scroll-reactive background (parallax grid + drifting glows)
+(function(){
+  const grid = document.querySelector('.bg-grid');
+  const g1 = document.querySelector('.bg-glow-1');
+  const g2 = document.querySelector('.bg-glow-2');
+  if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+  if (!grid && !g1 && !g2) return;
+  let ticking = false;
+  function update(){
+    const y = window.scrollY || window.pageYOffset || 0;
+    if (grid) grid.style.backgroundPosition = '0px ' + (y * 0.18) + 'px, 0px ' + (y * 0.18) + 'px';
+    if (g1) g1.style.transform = 'translate3d(' + (Math.sin(y * 0.0012) * 70) + 'px,' + (y * 0.22) + 'px,0)';
+    if (g2) g2.style.transform = 'translate3d(' + (Math.cos(y * 0.0014) * 90) + 'px,' + (-y * 0.16) + 'px,0)';
+    ticking = false;
+  }
+  window.addEventListener('scroll', function(){
+    if (!ticking){ requestAnimationFrame(update); ticking = true; }
+  }, { passive: true });
+  update();
+})();
+
+/* ============ STARFIELD ============
+   Stars drift and twinkle across the background, with depth deciding size,
+   brightness and how hard they lag behind the scroll. Scrolling (either
+   direction) pulls them into a constellation of the word for the section
+   you're moving through; stop scrolling and it dissolves back into drift.
+   The cursor shoves nearby stars aside and lights them up, and a meteor
+   crosses the sky every few seconds. */
+(function(){
+  const canvas = document.getElementById('starCanvas');
+  if (!canvas) return;
+  const ctx = canvas.getContext('2d');
+  if (!ctx) return;
+
+  const TAU = Math.PI * 2;
+  const OW = 380, OH = 140;   // low-res buffer the target text is sampled from
+
+  /* ---- tuning knobs ---- */
+  const SPRITE      = 72;     // sprite tile, CSS px — drawn scaled per star
+  const LINK_FREE   = 122;    // constellation link radius while drifting, px
+  const LINK_FORMED = 46;     // ...and once the word has come together, where
+                              // the points are dense enough to turn to mush
+  const LINK_STARS  = 130;    // only the biggest N stars join the web
+  const CURSOR_R    = 165;    // cursor influence radius, px
+  const CURSOR_PUSH = 22;     // how far a star gets shoved aside, px
+  const METEOR_MIN  = 4200;   // ms between meteors, low end
+  const METEOR_MAX  = 12000;  // ...and high end
+  const DRAW_K      = 18.2;   // sprite draw size per px of visible core radius,
+                              // derived from the gradient stops in buildSprite
+
+  const reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+  /* ---- palette: mostly white, one tier pulled from --accent, a few warm ---- */
+  const cs = getComputedStyle(document.documentElement);
+  const ACCENT = (cs.getPropertyValue('--accent') || '').trim() || '#5b8cff';
+
+  function hexRGB(h){
+    h = (h || '').trim();
+    if (h.charAt(0) !== '#') return [140, 175, 255];
+    if (h.length === 4) h = '#' + h[1] + h[1] + h[2] + h[2] + h[3] + h[3];
+    const n = parseInt(h.slice(1, 7), 16);
+    if (isNaN(n)) return [140, 175, 255];
+    return [(n >> 16) & 255, (n >> 8) & 255, n & 255];
+  }
+  // mix toward white — the raw accent reads muddy at the low alphas stars use
+  function lift(rgb, amt){
+    return [
+      Math.round(rgb[0] + (255 - rgb[0]) * amt),
+      Math.round(rgb[1] + (255 - rgb[1]) * amt),
+      Math.round(rgb[2] + (255 - rgb[2]) * amt)
+    ].join(',');
+  }
+  const ARGB = hexRGB(ACCENT);
+  const LINK_RGB = lift(ARGB, 0.55);
+
+  const TIERS = [
+    { rgb: '255,255,255',    w: 0.50 },
+    { rgb: '222,233,255',    w: 0.20 },
+    { rgb: lift(ARGB, 0.45), w: 0.16 },   // accent family
+    { rgb: '255,228,196',    w: 0.10 },   // warm
+    { rgb: '214,196,255',    w: 0.04 }    // violet
+  ];
+  const CDF = (function(){
+    const out = []; let s = 0;
+    for (let i = 0; i < TIERS.length; i++){ s += TIERS[i].w; out.push(s); }
+    return out;
+  })();
+  function pickTier(){
+    const r = Math.random() * CDF[CDF.length - 1];
+    for (let i = 0; i < CDF.length; i++) if (r <= CDF[i]) return i;
+    return 0;
+  }
+
+  // one word per section — `small` is used on narrow screens where a long
+  // word would be too sparse to read with fewer stars
+  const ZONES = [
+    { sel:'.hero',     word:'MAHMOUD', small:'MAH'  },
+    { sel:'#stack',    word:'STACK',   small:'DEV'  },
+    { sel:'#work',     word:'WORK',    small:'WORK' },
+    { sel:'#about',    word:'EGYPT',   small:'EGY'  },
+    { sel:'#contact',  word:'HIRE ME', small:'HIRE' }
+  ];
+
+  let W = 0, H = 0, DPR = 1;
+  let sprites = [];           // [tier][0 = plain, 1 = spiked]
+  let stars = [];
+  let linkers = [];           // indices of the stars that join the web
+  let ptCache = Object.create(null);
+  let off = null, octx = null;
+  let focus = 0;              // 0 = drifting, 1 = holding a word
+  let formed = false;
+  let currentText = '';
+  let raf = 0, running = false;
+  let last = 0;               // rAF timestamp, for delta-time
+  let scrollY0 = 0;           // scroll position at the previous frame
+  let mx = -1e4, my = -1e4, cursorOn = false;
+  let meteors = [], meteorAt = 0;
+
+  // link grid: flat cell array -> linked list of indices into `linkers`
+  let cellHead = null, cellNext = null, gCols = 0, gRows = 0;
+
+  // constellation lines, batched into 3 alpha buckets so the whole web is
+  // 3 stroke() calls a frame instead of one per line
+  const seg = [[], [], []];
+  const segLen = [0, 0, 0];
+
+  /* ---- one star sprite: hot core, soft halo, optional diffraction spikes ----
+     Pre-rendered once per palette tier so each frame is a single drawImage()
+     per star instead of a gradient build per star. */
+  function buildSprite(rgb, spiked){
+    const S = Math.max(8, Math.round(SPRITE * DPR));
+    const c = document.createElement('canvas');
+    c.width = c.height = S;
+    const g = c.getContext('2d');
+    if (!g) return null;
+    const r = S / 2;
+
+    if (spiked){
+      // four tapered spikes, under the halo so the core stays the hottest point
+      g.save();
+      g.translate(r, r);
+      const len = r * 0.94, wid = r * 0.055;
+      for (let k = 0; k < 4; k++){
+        const lg = g.createLinearGradient(0, 0, len, 0);
+        lg.addColorStop(0,    'rgba(' + rgb + ',0.50)');
+        lg.addColorStop(0.35, 'rgba(' + rgb + ',0.14)');
+        lg.addColorStop(1,    'rgba(' + rgb + ',0)');
+        g.fillStyle = lg;
+        g.beginPath();
+        g.moveTo(0, -wid); g.lineTo(len, 0); g.lineTo(0, wid);
+        g.closePath(); g.fill();
+        g.rotate(Math.PI / 2);
+      }
+      g.restore();
+    }
+
+    // The 0.11 stop is the visible dot edge and 0.40 is the glow edge — DRAW_K
+    // above is 1/0.055, so a star drawn at core*DRAW_K px lands a dot of
+    // exactly `core` px with roughly 3x that in halo.
+    const grd = g.createRadialGradient(r, r, 0, r, r, r);
+    grd.addColorStop(0,    'rgba(' + rgb + ',1)');
+    grd.addColorStop(0.11, 'rgba(' + rgb + ',0.92)');
+    grd.addColorStop(0.20, 'rgba(' + rgb + ',0.42)');
+    grd.addColorStop(0.40, 'rgba(' + rgb + ',0.10)');
+    grd.addColorStop(0.72, 'rgba(' + rgb + ',0.02)');
+    grd.addColorStop(1,    'rgba(' + rgb + ',0)');
+    g.fillStyle = grd;
+    g.beginPath(); g.arc(r, r, r, 0, TAU); g.fill();
+
+    return c;
+  }
+
+  function buildSprites(){
+    sprites = TIERS.map(function(t){
+      return [buildSprite(t.rgb, false), buildSprite(t.rgb, true)];
+    });
+  }
+
+  function makeStar(){
+    const z = Math.pow(Math.random(), 1.8);   // biased to far, small, faint
+    const drift = 0.012 + (1 - z) * 0.02;     // near stars barely crawl
+    const ang = Math.random() * TAU;
+    return {
+      x: Math.random() * W, y: Math.random() * H,
+      z: z,
+      core: 0.55 + z * 2.9,                   // visible dot radius, px
+      base: 0.20 + z * 0.52,                  // base alpha
+      tier: pickTier(),
+      spiked: z > 0.88 && Math.random() < 0.6,
+      tw: Math.random() * TAU,                // twinkle phase
+      tws: 0.012 + Math.random() * 0.030,     // twinkle speed
+      dx: Math.cos(ang) * drift,              // idle drift it always returns to
+      dy: Math.sin(ang) * drift,
+      vx: Math.cos(ang) * drift,
+      vy: Math.sin(ang) * drift,
+      par: 0.03 + z * 0.15,                   // scroll parallax weight
+      ease: 0.055 + Math.random() * 0.050,    // how eagerly it joins the word
+      tx: null, ty: null,
+      ox: 0, oy: 0,                           // cursor push, eased
+      glow: 0,
+      jx: Math.random() * TAU, jy: Math.random() * TAU,
+      sx: 0, sy: 0                            // screen position for this frame
+    };
+  }
+
+  /* dt is in 60fps frames, so every constant here stays readable as
+     "per frame at 60Hz" while the motion itself is framerate-independent. */
+  function step(dt){
+    focus += ((formed ? 1 : 0) - focus) * Math.min(1, 0.05 * dt);
+
+    // read the scroll once a frame and clamp it, so a jump-scroll or an anchor
+    // jump nudges the sky instead of teleporting it
+    const sy = window.scrollY || window.pageYOffset || 0;
+    let sd = sy - scrollY0;
+    scrollY0 = sy;
+    if (sd >  160) sd =  160; else if (sd < -160) sd = -160;
+    const drag = 1 - focus;   // parallax stops fighting the word once formed
+
+    const pad = 40;
+    const spanX = W + pad * 2, spanY = H + pad * 2;
+    const ck = Math.min(1, 0.10 * dt);
+
+    for (let i = 0; i < stars.length; i++){
+      const s = stars[i];
+      s.tw += s.tws * dt;
+
+      if (s.tx !== null){
+        // ease into the assigned pixel of the word, then breathe in place
+        const k = Math.min(1, s.ease * dt);
+        s.x += (s.tx - s.x) * k;
+        s.y += (s.ty - s.y) * k;
+        s.jx += 0.020 * dt; s.jy += 0.017 * dt;
+        s.x += Math.sin(s.jx) * 0.09 * dt;
+        s.y += Math.cos(s.jy) * 0.09 * dt;
+        s.vx = s.dx; s.vy = s.dy;   // no stale burst velocity on release
+      } else {
+        // drift, easing back to the idle velocity after a release puff
+        const r = Math.min(1, 0.02 * dt);
+        s.vx += (s.dx - s.vx) * r;
+        s.vy += (s.dy - s.vy) * r;
+        s.x += s.vx * dt;
+        s.y += s.vy * dt;
+      }
+
+      s.y -= sd * s.par * drag;
+
+      if (s.x < -pad) s.x += spanX; else if (s.x > W + pad) s.x -= spanX;
+      if (s.y < -pad) s.y += spanY; else if (s.y > H + pad) s.y -= spanY;
+
+      // cursor: shove aside and light up, both eased so it never snaps
+      let tox = 0, toy = 0, tglow = 0;
+      if (cursorOn){
+        const ddx = s.x - mx, ddy = s.y - my;
+        const d2 = ddx * ddx + ddy * ddy;
+        if (d2 < CURSOR_R * CURSOR_R){
+          const d = Math.sqrt(d2) || 1;
+          const f = 1 - d / CURSOR_R;
+          const ff = f * f;
+          tox = ddx / d * ff * CURSOR_PUSH;
+          toy = ddy / d * ff * CURSOR_PUSH;
+          tglow = ff;
+        }
+      }
+      s.ox += (tox - s.ox) * ck;
+      s.oy += (toy - s.oy) * ck;
+      s.glow += (tglow - s.glow) * ck;
+
+      s.sx = s.x + s.ox;
+      s.sy = s.y + s.oy;
+    }
+  }
+
+  /* ---- constellation web ---- */
+  function rebuildGrid(){
+    gCols = Math.max(1, Math.ceil(W / LINK_FREE));
+    gRows = Math.max(1, Math.ceil(H / LINK_FREE));
+    cellHead = new Int32Array(gCols * gRows);
+    cellNext = new Int32Array(Math.max(1, linkers.length));
+  }
+
+  // half neighbourhood — visits every unordered pair exactly once
+  const NB = [[0, 0], [1, 0], [-1, 1], [0, 1], [1, 1]];
+
+  function drawLinks(){
+    const n = linkers.length;
+    if (n < 2 || !cellHead) return;
+
+    // the grid is always built at LINK_FREE, so a shorter LD is still fully
+    // covered by the same one-cell neighbourhood
+    const LD = LINK_FREE + (LINK_FORMED - LINK_FREE) * focus;
+    const LD2 = LD * LD;
+    const cell = LINK_FREE;
+
+    cellHead.fill(-1);
+    for (let k = 0; k < n; k++){
+      const s = stars[linkers[k]];
+      let cx = (s.sx / cell) | 0, cy = (s.sy / cell) | 0;
+      if (cx < 0) cx = 0; else if (cx >= gCols) cx = gCols - 1;
+      if (cy < 0) cy = 0; else if (cy >= gRows) cy = gRows - 1;
+      const ci = cy * gCols + cx;
+      cellNext[k] = cellHead[ci];
+      cellHead[ci] = k;
+    }
+
+    segLen[0] = segLen[1] = segLen[2] = 0;
+
+    for (let k = 0; k < n; k++){
+      const a = stars[linkers[k]];
+      let cx = (a.sx / cell) | 0, cy = (a.sy / cell) | 0;
+      if (cx < 0) cx = 0; else if (cx >= gCols) cx = gCols - 1;
+      if (cy < 0) cy = 0; else if (cy >= gRows) cy = gRows - 1;
+
+      for (let q = 0; q < 5; q++){
+        const nx = cx + NB[q][0], ny = cy + NB[q][1];
+        if (nx < 0 || ny < 0 || nx >= gCols || ny >= gRows) continue;
+        for (let j = cellHead[ny * gCols + nx]; j !== -1; j = cellNext[j]){
+          if (q === 0 && j <= k) continue;
+          const b = stars[linkers[j]];
+          const dx = b.sx - a.sx, dy = b.sy - a.sy;
+          const d2 = dx * dx + dy * dy;
+          if (d2 > LD2) continue;
+          const t = 1 - Math.sqrt(d2) / LD;
+          const bi = t < 0.34 ? 0 : (t < 0.67 ? 1 : 2);
+          const arr = seg[bi];
+          const p = segLen[bi];
+          arr[p] = a.sx; arr[p + 1] = a.sy; arr[p + 2] = b.sx; arr[p + 3] = b.sy;
+          segLen[bi] = p + 4;
+        }
+      }
+    }
+
+    const baseA = 0.05 + focus * 0.26;
+    const tierA = [0.34, 0.66, 1];
+    ctx.lineWidth = 0.7;
+    for (let bi = 0; bi < 3; bi++){
+      const len = segLen[bi];
+      if (!len) continue;
+      ctx.strokeStyle = 'rgba(' + LINK_RGB + ',' + (baseA * tierA[bi]).toFixed(3) + ')';
+      ctx.beginPath();
+      const arr = seg[bi];
+      for (let p = 0; p < len; p += 4){
+        ctx.moveTo(arr[p], arr[p + 1]);
+        ctx.lineTo(arr[p + 2], arr[p + 3]);
+      }
+      ctx.stroke();
+    }
+  }
+
+  /* ---- meteors ---- */
+  function spawnMeteor(){
+    if (meteors.length >= 2) return;
+    const toRight = Math.random() < 0.5;
+    const ang = 0.16 + Math.random() * 0.30;   // shallow downward slope
+    meteors.push({
+      x: toRight ? -60 + Math.random() * W * 0.35
+                 : W + 60 - Math.random() * W * 0.35,
+      y: -40 + Math.random() * H * 0.45,
+      ux: (toRight ? 1 : -1) * Math.cos(ang),
+      uy: Math.sin(ang),
+      sp: 7.5 + Math.random() * 7,
+      len: 130 + Math.random() * 150,
+      w: 1.1 + Math.random() * 1.1,
+      life: 0,
+      span: 70 + Math.random() * 40              // frames
+    });
+  }
+
+  function stepMeteors(dt){
+    for (let i = meteors.length - 1; i >= 0; i--){
+      const m = meteors[i];
+      m.life += dt;
+      m.x += m.ux * m.sp * dt;
+      m.y += m.uy * m.sp * dt;
+      if (m.life > m.span || m.x < -420 || m.x > W + 420 || m.y > H + 220){
+        meteors.splice(i, 1);
+      }
+    }
+  }
+
+  function drawMeteors(){
+    for (let i = 0; i < meteors.length; i++){
+      const m = meteors[i];
+      const p = m.life / m.span;
+      const a = Math.max(0, Math.min(1, Math.min(p / 0.12, (1 - p) / 0.35))) * 0.85;
+      if (a <= 0.001) continue;
+      const tx = m.x - m.ux * m.len, ty = m.y - m.uy * m.len;
+
+      const lg = ctx.createLinearGradient(m.x, m.y, tx, ty);
+      lg.addColorStop(0,    'rgba(255,255,255,' + a.toFixed(3) + ')');
+      lg.addColorStop(0.22, 'rgba(' + LINK_RGB + ',' + (a * 0.45).toFixed(3) + ')');
+      lg.addColorStop(1,    'rgba(' + LINK_RGB + ',0)');
+      ctx.strokeStyle = lg;
+      ctx.lineWidth = m.w;
+      ctx.lineCap = 'round';
+      ctx.beginPath(); ctx.moveTo(m.x, m.y); ctx.lineTo(tx, ty); ctx.stroke();
+
+      const hg = ctx.createRadialGradient(m.x, m.y, 0, m.x, m.y, 7);
+      hg.addColorStop(0, 'rgba(255,255,255,' + a.toFixed(3) + ')');
+      hg.addColorStop(1, 'rgba(255,255,255,0)');
+      ctx.fillStyle = hg;
+      ctx.beginPath(); ctx.arc(m.x, m.y, 7, 0, TAU); ctx.fill();
+    }
+  }
+
+  function draw(){
+    ctx.clearRect(0, 0, W, H);
+    drawLinks();
+
+    for (let i = 0; i < stars.length; i++){
+      const s = stars[i];
+      const pair = sprites[s.tier];
+      if (!pair) continue;
+      const img = s.spiked ? pair[1] : pair[0];
+      if (!img) continue;
+
+      const tw = 0.62 + 0.38 * Math.sin(s.tw);
+      let a = s.base * tw * (1 + focus * 1.9 + s.glow * 1.4);
+      if (a > 0.96) a = 0.96;
+      // Stars SHRINK into the word. A halo is far wider than the letter strokes,
+      // so at full size a few hundred of them read as a cloud, not as text —
+      // tightening them to points is what makes the word legible, and the extra
+      // alpha above keeps the constellation just as bright.
+      const d = s.core * DRAW_K * (1 - focus * 0.52) * (1 + s.glow * 0.45) * (0.88 + tw * 0.14);
+
+      ctx.globalAlpha = a;
+      ctx.drawImage(img, s.sx - d / 2, s.sy - d / 2, d, d);
+    }
+    ctx.globalAlpha = 1;
+
+    drawMeteors();
+  }
+
+  /* Rasterise the word once, keep every opaque pixel as a candidate target. */
+  function textPoints(text){
+    const key = text + '|' + Math.round(W) + 'x' + Math.round(H);
+    if (ptCache[key]) return ptCache[key];
+
+    if (!off){
+      off = document.createElement('canvas');
+      off.width = OW; off.height = OH;
+      octx = off.getContext('2d', { willReadFrequently: true });
+    }
+    if (!octx) return [];
+
+    const FAM = "'Archivo Black','Arial Black',sans-serif";
+    octx.clearRect(0, 0, OW, OH);
+    octx.textAlign = 'center';
+    octx.textBaseline = 'middle';
+    octx.font = '700 100px ' + FAM;
+    const m = octx.measureText(text).width || 1;
+    const fs = Math.max(16, Math.round(Math.min(100 * (OW * 0.94 / m), OH * 0.76)));
+    octx.font = '700 ' + fs + 'px ' + FAM;
+    octx.fillStyle = '#fff';
+    octx.fillText(text, OW / 2, OH / 2);
+
+    let data;
+    try { data = octx.getImageData(0, 0, OW, OH).data; }
+    catch (e) { return []; }
+
+    // map buffer space onto a viewport-centred box, aspect preserved
+    let dw = Math.min(W * 0.86, 1150);
+    let dh = dw * (OH / OW);
+    if (dh > H * 0.52){ dh = H * 0.52; dw = dh * (OW / OH); }
+    const ox = W / 2 - dw / 2, oy = H / 2 - dh / 2;
+    const kx = dw / OW, ky = dh / OH;
+
+    const pts = [];
+    for (let y = 0; y < OH; y++){
+      for (let x = 0; x < OW; x++){
+        if (data[(y * OW + x) * 4 + 3] > 130){
+          pts.push({ x: ox + x * kx, y: oy + y * ky });
+        }
+      }
+    }
+    ptCache[key] = pts;
+    return pts;
+  }
+
+  function shuffle(arr){
+    for (let i = arr.length - 1; i > 0; i--){
+      const j = (Math.random() * (i + 1)) | 0;
+      const t = arr[i]; arr[i] = arr[j]; arr[j] = t;
+    }
+    return arr;
+  }
+
+  function formShape(text){
+    const pts = textPoints(text);
+    if (!pts.length) return;
+
+    // a few stars never join — stragglers keep the sky from looking staged
+    const order  = shuffle(stars.map(function(_, i){ return i; }));
+    const strays = Math.max(1, Math.round(stars.length * 0.08));
+    for (let k = 0; k < strays; k++){ stars[order[k]].tx = null; stars[order[k]].ty = null; }
+
+    const workers = order.slice(strays);
+    const need = workers.length;
+    const targets = new Array(need);
+    if (pts.length >= need){
+      shuffle(pts);
+      for (let i = 0; i < need; i++) targets[i] = pts[i];
+    } else {
+      for (let i = 0; i < need; i++){
+        const p = pts[i % pts.length];
+        targets[i] = { x: p.x + (Math.random() - 0.5) * 4, y: p.y + (Math.random() - 0.5) * 4 };
+      }
+    }
+
+    // match stars to targets by angle around centre so they fan in instead of
+    // criss-crossing the whole screen
+    const cx = W / 2, cy = H / 2;
+    workers.sort(function(i, j){
+      return Math.atan2(stars[i].y - cy, stars[i].x - cx) -
+             Math.atan2(stars[j].y - cy, stars[j].x - cx);
+    });
+    targets.sort(function(p, q){
+      return Math.atan2(p.y - cy, p.x - cx) - Math.atan2(q.y - cy, q.x - cx);
+    });
+    for (let k = 0; k < need; k++){
+      const s = stars[workers[k]];
+      s.tx = targets[k].x; s.ty = targets[k].y;
+    }
+
+    formed = true;
+    currentText = text;
+  }
+
+  function releaseShape(){
+    const cx = W / 2, cy = H / 2;
+    for (let i = 0; i < stars.length; i++){
+      const s = stars[i];
+      if (s.tx !== null){
+        // a small outward puff, then the drift easing in step() takes over
+        const a = Math.atan2(s.y - cy, s.x - cx) + (Math.random() - 0.5) * 1.4;
+        const sp = 1.5 + Math.random() * 2.5;
+        s.vx = Math.cos(a) * sp;
+        s.vy = Math.sin(a) * sp;
+      }
+      s.tx = null; s.ty = null;
+    }
+    formed = false;
+    currentText = '';
+  }
+
+  function zoneWord(){
+    const midY = window.innerHeight * 0.5;
+    let pick = ZONES[0];
+    for (let i = 0; i < ZONES.length; i++){
+      const el = document.querySelector(ZONES[i].sel);
+      if (el && el.getBoundingClientRect().top <= midY) pick = ZONES[i];
+    }
+    return W < 640 ? pick.small : pick.word;
+  }
+
+  function resize(){
+    const dpr = Math.min(2, window.devicePixelRatio || 1);
+    const rebuild = (dpr !== DPR) || !sprites.length;
+    DPR = dpr;
+    W = window.innerWidth; H = window.innerHeight;
+    canvas.width  = Math.max(1, Math.round(W * DPR));
+    canvas.height = Math.max(1, Math.round(H * DPR));
+    canvas.style.width  = W + 'px';
+    canvas.style.height = H + 'px';
+    ctx.setTransform(DPR, 0, 0, DPR, 0, 0);
+    if (rebuild) buildSprites();
+    ptCache = Object.create(null);   // targets were in old viewport coords
+
+    const target = Math.max(120, Math.min(400, Math.round(W * H / 4600)));
+    while (stars.length < target) stars.push(makeStar());
+    if (stars.length > target) stars.length = target;
+    for (let i = 0; i < stars.length; i++){
+      const s = stars[i];
+      if (s.x > W + 30 || s.y > H + 30){ s.x = Math.random() * W; s.y = Math.random() * H; }
+      s.tx = null; s.ty = null;
+      s.ox = 0; s.oy = 0; s.glow = 0;
+      s.sx = s.x; s.sy = s.y;
+    }
+
+    // the web runs on the biggest stars only — brightest anchors, fewest lines
+    linkers = stars.map(function(_, i){ return i; })
+      .sort(function(i, j){ return stars[j].core - stars[i].core; })
+      .slice(0, Math.min(LINK_STARS, stars.length));
+    rebuildGrid();
+
+    formed = false; currentText = ''; focus = 0;
+    scrollY0 = window.scrollY || 0;
+  }
+
+  function loop(now){
+    // clamp the delta so a blocked main thread doesn't fling the sky forward
+    const dtMs = last ? Math.min(64, now - last) : 16.667;
+    last = now;
+    const dt = dtMs / 16.667;
+
+    step(dt);
+    stepMeteors(dt);
+    if (!meteorAt){
+      meteorAt = now + 2500 + Math.random() * 4000;   // don't open with one
+    } else if (now >= meteorAt){
+      spawnMeteor();
+      meteorAt = now + METEOR_MIN + Math.random() * (METEOR_MAX - METEOR_MIN);
+    }
+    draw();
+    raf = requestAnimationFrame(loop);
+  }
+  function start(){
+    if (running) return;
+    running = true;
+    last = 0;                          // fresh delta after a pause
+    scrollY0 = window.scrollY || 0;
+    raf = requestAnimationFrame(loop);
+  }
+  function stop(){ running = false; cancelAnimationFrame(raf); }
+
+  resize();
+
+  if (reduced){
+    draw();  // static sky, no motion and no scroll reaction
+    window.addEventListener('resize', function(){ resize(); draw(); });
+    return;
+  }
+
+  let lastY = window.scrollY || 0, travel = 0, idleT = 0, resizeT = 0;
+  window.addEventListener('scroll', function(){
+    const y = window.scrollY || 0;
+    travel += Math.abs(y - lastY);
+    lastY = y;
+    if (travel > 45){
+      const w = zoneWord();
+      if (!formed || w !== currentText) formShape(w);
+    }
+    clearTimeout(idleT);
+    idleT = setTimeout(function(){ travel = 0; releaseShape(); }, 1050);
+  }, { passive: true });
+
+  // cursor influence — pointer devices only, and it goes cold when the pointer
+  // leaves the window so stars don't stay frozen mid-shove
+  if (window.matchMedia('(hover: hover)').matches){
+    window.addEventListener('mousemove', function(e){
+      mx = e.clientX; my = e.clientY; cursorOn = true;
+    }, { passive: true });
+    document.addEventListener('mouseleave', function(){ cursorOn = false; });
+    window.addEventListener('blur', function(){ cursorOn = false; });
+  }
+
+  window.addEventListener('resize', function(){
+    clearTimeout(resizeT);
+    resizeT = setTimeout(resize, 180);
+  });
+
+  document.addEventListener('visibilitychange', function(){
+    if (document.hidden) stop(); else start();
+  });
+
+  // webfont metrics change the rasterised word, so drop the cache once it lands
+  if (document.fonts && document.fonts.ready){
+    document.fonts.ready.then(function(){ ptCache = Object.create(null); });
+  }
+
+  // greet with the name right after the preloader clears
+  document.addEventListener('site:ready', function(){
+    formShape(zoneWord());
+    setTimeout(function(){ if (formed) releaseShape(); }, 2600);
+  }, { once: true });
+
+  start();
+})();
+
+// ============ SCROLL-DRIVEN STACK ============
+
+(function(){
+
+  const section = document.querySelector('.stack-section');
+  if (!section) return;
+
+  const cards = Array.from(
+    section.querySelectorAll('.stack-card')
+  );
+
+  const currentEl = section.querySelector(
+    '.stack-progress-current'
+  );
+
+  if (!cards.length) return;
+
+  let current = 0;
+
+  function updateCards(){
+
+    cards.forEach((card, index) => {
+
+      card.classList.remove('active', 'prev');
+
+      if(index === current){
+        card.classList.add('active');
+      }
+
+      if(index < current){
+        card.classList.add('prev');
+      }
+
+    });
+
+    if(currentEl){
+      currentEl.textContent =
+        String(current + 1).padStart(2, '0');
+    }
+  }
+
+  updateCards();
+
+  /*
+   * The section itself is 300vh/320vh.
+   * Each portion of the section represents one Stack card.
+   */
+  function updateFromScroll(){
+
+    const rect = section.getBoundingClientRect();
+    const viewportHeight = window.innerHeight;
+
+    const totalScrollable =
+      section.offsetHeight - viewportHeight;
+
+    if(totalScrollable <= 0) return;
+
+    const progress =
+      Math.min(
+        1,
+        Math.max(
+          0,
+          -rect.top / totalScrollable
+        )
+      );
+
+    const index = Math.min(
+      cards.length - 1,
+      Math.floor(progress * cards.length)
+    );
+
+    if(index !== current){
+      current = index;
+      updateCards();
+    }
+  }
+
+  let ticking = false;
+
+  window.addEventListener('scroll', function(){
+
+    if(!ticking){
+
+      requestAnimationFrame(function(){
+
+        updateFromScroll();
+        ticking = false;
+
+      });
+
+      ticking = true;
+    }
+
+  }, { passive:true });
+
+  window.addEventListener('resize', updateFromScroll);
+
+})();
+
+</script>
+
+</body>
+</html>
